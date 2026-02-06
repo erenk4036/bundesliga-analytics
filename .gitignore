@@ -23,4 +23,5 @@ data/processed/*
 
 # IDE
 .vscode/
-.idea/
+.idea/.env
+‚

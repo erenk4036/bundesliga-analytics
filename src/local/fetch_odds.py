@@ -21,7 +21,7 @@ def fetch_and_save_odds():
     try:
         print(f"📡 Rufe Bundesliga-Daten ab...")
         response = requests.get(url)
-        response.raise_for_status() # Wirft Fehler bei 4xx oder 5xx Statuscodes
+        response.raise_for_status() # Throw Error for 5xx and 4xx 
         
         data = response.json()
         

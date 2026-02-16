@@ -71,7 +71,7 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private Route Table (ohne NAT Gateway)
+# Private Route Table (without NAT Gateway)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
   

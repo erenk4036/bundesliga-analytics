@@ -1,8 +1,18 @@
 terraform {
+  required_version = ">= 1.0.0"
+
+  # Remote Backend for persistent state management
+  backend "s3" {
+    bucket  = "eren-kolac-terraform-state-bucket"
+    key     = "bundesliga-analytics/terraform.tfstate"
+    region  = "eu-central-1" 
+    encrypt = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "6.32.0"
+      version = "6.32.0" 
     }
   }
 }
@@ -19,4 +29,3 @@ provider "aws" {
 resource "random_id" "suffix" {
   byte_length = 4
 }
-

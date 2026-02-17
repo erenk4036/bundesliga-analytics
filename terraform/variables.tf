@@ -8,7 +8,7 @@ variable "environment" {
   description = "Environment (dev, staging, prod)"
   type        = string
   default     = "dev"
-  
+
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be 'dev', 'staging' or 'prod'."
@@ -47,6 +47,12 @@ variable "odds_api_key" {
   description = "API Key for The Odds API (stored in AWS Secrets Manager)"
   type        = string
   sensitive   = true
+}
+
+variable "enable_nat_gateway" {
+  description = "Enable NAT Gateway for private subnet internet access (for Lambda updates)"
+  type        = bool
+  default     = false
 }
 
 variable "enable_xray_tracing" {

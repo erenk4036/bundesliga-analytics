@@ -42,3 +42,15 @@ variable "tags" {
     Repository = "github.com/erenk4036/bundesliga-analytics"
   }
 }
+
+variable "odds_api_key" {
+  description = "API Key for The Odds API (stored in AWS Secrets Manager)"
+  type        = string
+  sensitive   = true
+}
+
+variable "enable_xray_tracing" {
+  description = "Enable X-Ray Tracing for Lambda Functions"
+  type        = bool
+  default     = false
+}

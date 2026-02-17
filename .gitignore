@@ -3,12 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+
+# Environment
 .env
 
 # MacOS
 .DS_Store
 
-# Data 
+# Data
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
@@ -18,9 +20,8 @@ data/processed/*
 terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.backup
-terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
 
 # IDE
 .vscode/
-.idea/.env
+.idea/

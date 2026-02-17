@@ -33,10 +33,31 @@ output "dynamodb_value_bets_table" {
   value       = aws_dynamodb_table.value_bets.name
 }
 
+output "lambda_execution_role_arn" {
+  description = "ARN of Lambda execution role"
+  value       = aws_iam_role.lambda_execution.arn
+}
+
+output "lambda_execution_role_name" {
+  description = "Name of Lambda execution role"
+  value       = aws_iam_role.lambda_execution.name
+}
+
+output "secrets_manager_arn" {
+  description = "ARN of Secrets Manager secret"
+  value       = aws_secretsmanager_secret.odds_api_key.arn
+  sensitive   = true
+}
+
+output "secrets_manager_name" {
+  description = "Name of Secrets Manager secret"
+  value       = aws_secretsmanager_secret.odds_api_key.name
+}
+
 output "summary" {
   description = "Deployment Summary"
-  value = <<-EOT
-    ✅ Infrastructure deployed successfully!
+  value       = <<-EOT
+    Infrastructure deployed successfully!
     
     VPC:
     - VPC ID: ${aws_vpc.main.id}

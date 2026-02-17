@@ -15,11 +15,11 @@ data/processed/*
 !data/processed/.gitkeep
 
 # Terraform
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfvars
-.terraform.lock.hcl
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
 
 # IDE
 .vscode/

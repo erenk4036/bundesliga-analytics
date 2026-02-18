@@ -117,75 +117,56 @@ output "schedule_analytics" {
   value       = aws_cloudwatch_event_rule.analytics_schedule.schedule_expression
 }
 
-# ---- Comprehensive Deployment Summary ----
+# ---- Website & API Outputs ----
 
-output "summary" {
-  description = "Deployment Summary"
-  value       = <<-EOT
-    ╔═══════════════════════════════════════════════════════════════════════════╗
-    ║                   BUNDESLIGA ANALYTICS - DEPLOYMENT SUMMARY               ║
-    ╚═══════════════════════════════════════════════════════════════════════════╝
-    
-    PROJECT INFORMATION
-    ├─ Environment:     ${var.environment}
-    ├─ Region:          ${var.aws_region}
-    └─ Project:         ${var.project_name}
-    
-    NETWORKING
-    ├─ VPC ID:          ${aws_vpc.main.id}
-    ├─ CIDR Block:      ${aws_vpc.main.cidr_block}
-    ├─ Public Subnets:  ${length(aws_subnet.public)} (${join(", ", [for s in aws_subnet.public : s.availability_zone])})
-    └─ Private Subnets: ${length(aws_subnet.private)} (${join(", ", [for s in aws_subnet.private : s.availability_zone])})
-    
-    STORAGE
-    ├─ Raw Data Bucket:       ${aws_s3_bucket.raw.bucket}
-    │  └─ Lifecycle:          90 days retention
-    └─ Processed Data Bucket: ${aws_s3_bucket.processed.bucket}
-       └─ Lifecycle:          30d → Intelligent Tiering → 90d Glacier → 365d Delete
-    
-    DATABASE (DynamoDB)
-    ├─ Odds Table:       ${aws_dynamodb_table.odds.name}
-    │  ├─ Billing Mode:  PAY_PER_REQUEST
-    │  ├─ Keys:          game_id (HASH), timestamp (RANGE)
-    │  └─ TTL:           90 days
-    └─ Value Bets Table: ${aws_dynamodb_table.value_bets.name}
-       ├─ Billing Mode:  PAY_PER_REQUEST
-       ├─ Keys:          date (HASH), value_percentage (RANGE)
-       └─ TTL:           90 days
-    
-    ETL PIPELINE (Lambda Functions)
-    ├─ Stage 1 - Extract:   ${aws_lambda_function.fetch_odds.function_name}
-    │  ├─ Runtime:          python3.12 | 256 MB | 60s timeout
-    │  ├─ Schedule:         ${aws_cloudwatch_event_rule.fetch_odds_schedule.schedule_expression}
-    │  └─ Log Group:        ${aws_cloudwatch_log_group.fetch_odds.name}
-    │
-    ├─ Stage 2 - Transform: ${aws_lambda_function.transform_data.function_name}
-    │  ├─ Runtime:          python3.12 | 512 MB | 120s timeout
-    │  ├─ Schedule:         ${aws_cloudwatch_event_rule.transform_data_schedule.schedule_expression}
-    │  └─ Log Group:        ${aws_cloudwatch_log_group.transform_data.name}
-    │
-    └─ Stage 3 - Load:      ${aws_lambda_function.analytics.function_name}
-       ├─ Runtime:          python3.12 | 256 MB | 120s timeout
-       ├─ Schedule:         ${aws_cloudwatch_event_rule.analytics_schedule.schedule_expression}
-       └─ Log Group:        ${aws_cloudwatch_log_group.analytics.name}
-    
-    SHARED DEPENDENCIES
-    ├─ Lambda Layer:     ${aws_lambda_layer_version.common_dependencies.layer_name}
-    ├─ Version:          ${aws_lambda_layer_version.common_dependencies.version}
-    └─ Dependencies:     requests, boto3, python-dotenv
-    
-    SECURITY
-    ├─ IAM Role:         ${aws_iam_role.lambda_execution.name}
-    ├─ Secrets Manager:  ${aws_secretsmanager_secret.odds_api_key.name}
-    └─ Encryption:       AES256 (S3), At-Rest (DynamoDB)
-    
-    MONITORING
-    ├─ CloudWatch Logs:  14-day retention
-    ├─ X-Ray Tracing:    ${var.enable_xray_tracing ? "Enabled" : "Disabled"}
-    └─ Metrics:          Custom namespace: ${var.project_name}/${var.environment}
-    
-    DEPLOYMENT STATUS: SUCCESS
-    
-    ╚═══════════════════════════════════════════════════════════════════════════╝
-  EOT
+output "website_bucket_name" {
+  description = "S3 bucket name for static website"
+  value       = aws_s3_bucket.website.bucket
+}
+
+output "website_endpoint" {
+  description = "S3 website endpoint URL"
+  value       = aws_s3_bucket_website_configuration.website.website_endpoint
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = aws_cloudfront_distribution.website.id
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain name (access to website)"
+  value       = aws_cloudfront_distribution.website.domain_name
+}
+
+output "website_url" {
+  description = "Complete HTTPS URL"
+  value       = "https://${aws_cloudfront_distribution.website.domain_name}"
+}
+
+output "api_gateway_url" {
+  description = "API Gateway endpoint URL for value bets"
+  value       = "${aws_api_gateway_stage.main.invoke_url}/value-bets"
+}
+
+output "api_gateway_base_url" {
+  description = "API Gateway base URL"
+  value       = aws_api_gateway_stage.main.invoke_url
+}
+
+output "api_reader_lambda_arn" {
+  description = "ARN of the API reader Lambda function"
+  value       = aws_lambda_function.api_reader.arn
+}
+
+# ---- Deployment Summary ----
+
+output "deployment_summary" {
+  description = "Quick reference deployment info"
+  value = {
+    website_url    = "https://${aws_cloudfront_distribution.website.domain_name}"
+    api_url        = "${aws_api_gateway_stage.main.invoke_url}/value-bets"
+    website_bucket = aws_s3_bucket.website.bucket
+    cloudfront_id  = aws_cloudfront_distribution.website.id
+  }
 }

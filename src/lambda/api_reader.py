@@ -66,7 +66,10 @@ def get_value_bets(date: str = None, limit: int = 50) -> List[Dict]:
     
     try:
         response = table.query(
-            KeyConditionExpression="date = :date",
+            KeyConditionExpression="#d = :date",
+            ExpressionAttributeNames={
+                "#d": "date"  # Use alias for reserved keyword
+            },
             ExpressionAttributeValues={
                 ":date": date
             },
@@ -101,7 +104,10 @@ def get_recent_bets(days: int = 7, limit: int = 100) -> List[Dict]:
         
         for date in dates:
             response = table.query(
-                KeyConditionExpression="date = :date",
+                KeyConditionExpression="#d = :date",
+                ExpressionAttributeNames={
+                    "#d": "date"
+                },
                 ExpressionAttributeValues={
                     ":date": date
                 },

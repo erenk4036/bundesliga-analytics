@@ -22,6 +22,11 @@ terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/terraform.tfvars
 
+# Lambda build artifacts
+.lambda_builds/
+layers/common/python/
+*.zip
+
 # IDE
 .vscode/
 .idea/

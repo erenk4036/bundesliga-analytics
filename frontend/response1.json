@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": {"message": "Data ingestion successful", "matches_count": 18, "s3_key": "odds/raw/bundesliga_20260218_120844.json", "timestamp": "2026-02-18T12:08:44.599284+00:00"}}

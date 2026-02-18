@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": {"message": "Transformation successful", "fixtures_input": 18, "records_output": 18, "source_key": "odds/raw/bundesliga_20260218_120844.json", "output_key": "odds/processed/value_bets_20260218_120910.json", "timestamp": "2026-02-18T12:09:10.264951+00:00"}}

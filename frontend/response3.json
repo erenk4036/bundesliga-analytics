@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": {"error": "An error occurred (ValidationException) when calling the BatchWriteItem operation: Provided list of item keys contains duplicates"}}

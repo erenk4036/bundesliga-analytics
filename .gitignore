@@ -27,6 +27,11 @@ terraform/terraform.tfvars
 layers/common/python/
 *.zip
 
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+
 # IDE
 .vscode/
 .idea/

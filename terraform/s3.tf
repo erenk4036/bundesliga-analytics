@@ -2,6 +2,8 @@
 resource "aws_s3_bucket" "raw" {
   bucket = "${var.project_name}-raw-data-${random_id.suffix.hex}"
 
+  force_destroy = true
+
   tags = {
     Name        = "${var.project_name}-raw-data-${var.environment}"
     DataType    = "raw"
@@ -56,6 +58,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw" {
 # S3 Bucket - Processed Data
 resource "aws_s3_bucket" "processed" {
   bucket = "${var.project_name}-processed-data-${random_id.suffix.hex}"
+
+  force_destroy = true
 
   tags = {
     Name        = "${var.project_name}-processed-data-${var.environment}"

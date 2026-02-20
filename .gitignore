@@ -17,21 +17,31 @@ data/processed/*
 !data/processed/.gitkeep
 
 # Terraform
-terraform/.terraform/
 terraform/*.tfstate
+terraform/*.tfstate.*
 terraform/*.tfstate.backup
+
+# Variable files
 terraform/terraform.tfvars
+terraform/environments/*.tfvars
 
 # Lambda build artifacts
-.lambda_builds/
-layers/common/python/
+terraform/.lambda_builds/
+terraform/layers/common/python/
 *.zip
+
+# Test event files
+terraform/test_events.json
 
 # Frontend
 frontend/node_modules/
 frontend/build/
 frontend/.env.local
+frontend/response*.json
 
 # IDE
 .vscode/
 .idea/
+
+# Logs
+*.logs

@@ -47,6 +47,15 @@ resource "aws_lambda_function" "api_reader" {
   timeout     = 30
   memory_size = 256
 
+  dynamic "vpc_config" {
+    for_each = var.lambda_in_vpc ? [1] : []
+
+    content {
+      subnet_ids         = aws_subnet.private[*].id
+      security_group_ids = [aws_security_group.lambda[0].id]
+    }
+  }
+
   environment {
     variables = {
       ENVIRONMENT         = var.environment
@@ -66,8 +75,9 @@ resource "aws_lambda_function" "api_reader" {
   ]
 
   tags = {
-    Name     = "${var.project_name}-api-reader-${var.environment}"
-    Function = "api-backend"
-    Purpose  = "serve-frontend-data"
+    Name       = "${var.project_name}-api-reader-${var.environment}"
+    Function   = "api-backend"
+    Purpose    = "serve-frontend-data"
+    VPCEnabled = var.lambda_in_vpc ? "true" : "false"
   }
 }

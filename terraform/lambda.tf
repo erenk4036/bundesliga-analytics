@@ -1,38 +1,57 @@
-# ==============================================================================
-# LAMBDA FUNCTIONS - Bundesliga Analytics ETL Pipeline
-# ==============================================================================
-# Three-stage pipeline:
-#   1. fetch_odds     → Fetches raw odds from The Odds API → S3 raw bucket
-#   2. transform_data → Reads raw S3, computes value bets → S3 processed bucket
-#   3. analytics      → Reads processed S3, writes results → DynamoDB
-# ==============================================================================
+# ------------------------------------------------------------------------------ 
+# LAMDA FUNCTIONS - ETL Pipeline
+# ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Archive: Package each Lambda function as a ZIP
-# Terraform will automatically re-deploy when the source file changes
-# (source_code_hash detects changes via filebase64sha256)
+# Security Group for Lambda Functions (only when running in VPC)
+# ------------------------------------------------------------------------------
+
+resource "aws_security_group" "lambda" {
+  count       = var.lambda_in_vpc ? 1 : 0
+  name        = "${var.project_name}-lambda-sg-${var.environment}"
+  description = "Security group for Lambda functions in VPC"
+  vpc_id      = aws_vpc.main.id
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
+  }
+
+  tags = {
+    Name = "${var.project_name}-lambda-sg-${var.environment}"
+  }
+}
+
+
+
+# ------------------------------------------------------------------------------
+# Archive Lambda Function Code
 # ------------------------------------------------------------------------------
 
 data "archive_file" "fetch_odds" {
   type        = "zip"
-  source_file = "${path.module}/src/lambda/fetch_odds.py"
+  source_file = "${path.module}/../src/lambda/fetch_odds.py"
   output_path = "${path.module}/.lambda_builds/fetch_odds.zip"
 }
 
 data "archive_file" "transform_data" {
   type        = "zip"
-  source_file = "${path.module}/src/lambda/transform_data.py"
+  source_file = "${path.module}/../src/lambda/transform_data.py"
   output_path = "${path.module}/.lambda_builds/transform_data.zip"
 }
 
 data "archive_file" "analytics" {
   type        = "zip"
-  source_file = "${path.module}/src/lambda/analytics.py"
+  source_file = "${path.module}/../src/lambda/analytics.py"
   output_path = "${path.module}/.lambda_builds/analytics.zip"
 }
 
 # ------------------------------------------------------------------------------
-# CloudWatch Log Groups
+# CloudWatch Log Groups (created before Lambda to avoid race condition)
 # with retention and managed by Terraform lifecycle
 # ------------------------------------------------------------------------------
 
@@ -84,11 +103,23 @@ resource "aws_lambda_function" "fetch_odds" {
   runtime  = "python3.12"
   role     = aws_iam_role.lambda_execution.arn
 
-  # Lambda Layer - provides requests, python-dotenv etc.
-  layers = [aws_lambda_layer_version.common_dependencies.arn]
-
   timeout      = 60   
   memory_size  = 256  
+
+  # Conditional VPC Configuration
+  # Only applies when lambda_in_vpc = true (production)
+  # Requires NAT Gateway for internet access
+  dynamic "vpc_config" {
+    for_each = var.lambda_in_vpc ? [1] : []
+
+    content {
+      subnet_ids         = aws_subnet.private[*].id
+      security_group_ids = [aws_security_group.lambda[0].id]
+    }
+  }
+
+  # Lambda Layer - provides requests, python-dotenv etc.
+  layers = [aws_lambda_layer_version.common_dependencies.arn]
 
   # Environment variables injected at runtime
   environment {
@@ -119,6 +150,7 @@ resource "aws_lambda_function" "fetch_odds" {
     Name     = "${var.project_name}-fetch-odds-${var.environment}"
     Function = "etl-stage-1"
     Stage    = "extract"
+    VPCEnabled = var.lambda_in_vpc ? "true" : "false"
   }
 }
 
@@ -137,17 +169,27 @@ resource "aws_lambda_function" "transform_data" {
   handler     = "transform_data.lambda_handler"
   runtime     = "python3.12"
   role        = aws_iam_role.lambda_execution.arn
-  layers      = [aws_lambda_layer_version.common_dependencies.arn]
 
   timeout     = 120   
   memory_size = 512  # testing with slightly higher Memory size and timeout
 
+  dynamic "vpc_config" {
+    for_each = var.lambda_in_vpc ? [1] : []
+
+    content {
+      subnet_ids         = aws_subnet.private[*].id
+      security_group_ids = [aws_security_group.lambda[0].id]
+    }
+  }
+
+  layers = [aws_lambda_layer_version.common_dependencies.arn]
+
   environment {
     variables = {
-      ENVIRONMENT          = var.environment
-      RAW_BUCKET_NAME      = aws_s3_bucket.raw.bucket
+      ENVIRONMENT           = var.environment
+      RAW_BUCKET_NAME       = aws_s3_bucket.raw.bucket
       PROCESSED_BUCKET_NAME = aws_s3_bucket.processed.bucket
-      LOG_LEVEL            = var.environment == "prod" ? "WARNING" : "INFO"
+      LOG_LEVEL             = var.environment == "prod" ? "WARNING" : "INFO"
     }
   }
 
@@ -161,9 +203,10 @@ resource "aws_lambda_function" "transform_data" {
   ]
 
   tags = {
-    Name     = "${var.project_name}-transform-data-${var.environment}"
-    Function = "etl-stage-2"
-    Stage    = "transform"
+    Name       = "${var.project_name}-transform-data-${var.environment}"
+    Function   = "etl-stage-2"
+    Stage      = "transform"
+    VPCEnabled = var.lambda_in_vpc ? "true" : "false"
   }
 }
 
@@ -182,10 +225,20 @@ resource "aws_lambda_function" "analytics" {
   handler     = "analytics.lambda_handler"
   runtime     = "python3.12"
   role        = aws_iam_role.lambda_execution.arn
-  layers      = [aws_lambda_layer_version.common_dependencies.arn]
 
   timeout     = 120
   memory_size = 256
+
+  dynamic "vpc_config" {
+    for_each = var.lambda_in_vpc ? [1] : []
+
+    content {
+      subnet_ids         = aws_subnet.private[*].id
+      security_group_ids = [aws_security_group.lambda[0].id]
+    }
+  }
+
+  layers = [aws_lambda_layer_version.common_dependencies.arn]
 
   environment {
     variables = {
@@ -210,5 +263,6 @@ resource "aws_lambda_function" "analytics" {
     Name     = "${var.project_name}-analytics-${var.environment}"
     Function = "etl-stage-3"
     Stage    = "load"
+    VPCEnabled = var.lambda_in_vpc ? "true" : "false"
   }
 }

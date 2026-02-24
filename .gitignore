@@ -20,6 +20,9 @@ data/processed/*
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/*.tfstate.backup
+terraform.tfvars.backup
+.terraform/
+
 
 # Variable files
 terraform/terraform.tfvars

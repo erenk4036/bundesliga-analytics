@@ -16,7 +16,7 @@
 resource "aws_cloudwatch_event_rule" "fetch_odds_schedule" {
   name                = "${var.project_name}-fetch-odds-schedule-${var.environment}"
   description         = "Triggers fetch_odds Lambda daily at 06:00 UTC"
-  schedule_expression = "cron(0 8 * * ? *)"   # Every day at 06:00 UTC
+  schedule_expression = "cron(0 6 * * ? *)"   # Every day at 06:00 UTC
   state               = "ENABLED"
 
   tags = {
@@ -46,7 +46,7 @@ resource "aws_lambda_permission" "allow_eventbridge_fetch_odds" {
 resource "aws_cloudwatch_event_rule" "transform_data_schedule" {
   name                = "${var.project_name}-transform-data-schedule-${var.environment}"
   description         = "Triggers transform_data Lambda daily at 06:10 UTC"
-  schedule_expression = "cron(10 8 * * ? *)"  # Every day at 06:10 UTC
+  schedule_expression = "cron(10 6 * * ? *)"  # Every day at 06:10 UTC
   state               = "ENABLED"
 
   tags = {
@@ -76,7 +76,7 @@ resource "aws_lambda_permission" "allow_eventbridge_transform_data" {
 resource "aws_cloudwatch_event_rule" "analytics_schedule" {
   name                = "${var.project_name}-analytics-schedule-${var.environment}"
   description         = "Triggers analytics Lambda daily at 06:20 UTC"
-  schedule_expression = "cron(20 8 * * ? *)"  # Every day at 06:20 UTC
+  schedule_expression = "cron(20 6 * * ? *)"  # Every day at 06:20 UTC
   state               = "ENABLED"
 
   tags = {

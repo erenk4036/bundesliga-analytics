@@ -90,7 +90,7 @@ function App() {
       <footer className="footer">
         <p>Bundesliga Analytics • Data-driven value betting insights</p>
         <p className="footer-disclaimer">
-          This is a demo project for educational purposes. Always gamble responsibly.
+          This is a capstone project for AWS Re/Start. Always gamble responsibly.
         </p>
       </footer>
     </div>

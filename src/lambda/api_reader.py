@@ -43,7 +43,7 @@ DYNAMODB_BETS_TABLE = os.environ["DYNAMODB_BETS_TABLE"]
 # --------------------------------------------------------------------------
 
 def decimal_to_float(obj):
-    """Convert Decimal objects to float for JSON serialization."""
+    # Convert Decimal objects to float for JSON serialization.
     if isinstance(obj, Decimal):
         return float(obj)
     elif isinstance(obj, dict):

@@ -1,44 +1,48 @@
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # LAMBDA LAYER - Common Python Dependencies
-# ==============================================================================
-# Structure inside the ZIP must be:
-#   python/lib/python3.12/site-packages/<your_packages>/
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Common Python dependencies shared across all Lambda functions
+# Includes: requests, boto3, python-dotenv
+# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# Build Lambda Layer (runs before layer creation)
+# ------------------------------------------------------------------------------
+
+# Null resource to build the layer if it doesn't exist
 resource "null_resource" "build_lambda_layer" {
+  # Trigger rebuild when requirements.txt changes
   triggers = {
-    # Re-build the layer whenever requirements.txt changes
-    requirements_hash = filemd5("${path.module}/layers/common/requirements.txt")
+    requirements = filemd5("${path.module}/layers/common/requirements.txt")
   }
 
+  # Build the layer
   provisioner "local-exec" {
     command = <<-EOT
+      set -e
       echo "Building Lambda Layer..."
-
-      # Clean up any previous build artifacts
+      
+      # Create build directory
+      mkdir -p ${path.module}/.lambda_builds
+      
+      # Clean previous build
       rm -rf ${path.module}/layers/common/python
-      rm -f  ${path.module}/.lambda_builds/common_layer.zip
-
-      # Create the directory structure Lambda expects
-      mkdir -p ${path.module}/layers/common/python
-
-      # Install packages into the layer directory
-      # --platform: ensures Linux-compatible binaries even on Mac/Windows
-      # --only-binary=:all: avoids compiling C extensions locally
-      # --python-version: pins to our Lambda runtime version
+      
+      # Install dependencies
       pip install \
+        -r ${path.module}/layers/common/requirements.txt \
+        -t ${path.module}/layers/common/python/ \
         --platform manylinux2014_x86_64 \
         --only-binary=:all: \
-        --python-version 3.12 \
-        --target ${path.module}/layers/common/python \
-        -r ${path.module}/layers/common/requirements.txt
-
-      # Create the ZIP archive
-      mkdir -p ${path.module}/.lambda_builds
-      cd ${path.module}/layers/common && zip -r9 \
-        ${path.module}/.lambda_builds/common_layer.zip python/
-
-      echo "Layer build complete!"
+        --upgrade
+      
+      # Create ZIP
+      cd ${path.module}
+      cd layers/common
+      zip -r ../../.lambda_builds/common_layer.zip python/
+      cd ../..
+      
+      echo "Lambda Layer built successfully!"
     EOT
   }
 }
@@ -48,16 +52,12 @@ resource "null_resource" "build_lambda_layer" {
 # ------------------------------------------------------------------------------
 
 resource "aws_lambda_layer_version" "common_dependencies" {
-  layer_name  = "${var.project_name}-common-deps-${var.environment}"
-  description = "Shared Python dependencies: requests, boto3 extensions, python-dotenv"
-
-  filename         = "${path.module}/.lambda_builds/common_layer.zip"
-  source_code_hash = filebase64sha256("${path.module}/.lambda_builds/common_layer.zip")
-
-  # Declare which runtimes are compatible with this layer
+  layer_name          = "${var.project_name}-common-dependencies-${var.environment}"
+  description         = "Common Python dependencies: requests, boto3, python-dotenv"
+  filename            = "${path.module}/.lambda_builds/common_layer.zip"
+  source_code_hash    = filebase64sha256("${path.module}/.lambda_builds/common_layer.zip")
   compatible_runtimes = ["python3.12"]
 
-  # Ensure the build runs BEFORE Terraform tries to upload the ZIP
   depends_on = [null_resource.build_lambda_layer]
 }
 
@@ -68,12 +68,12 @@ resource "aws_lambda_layer_version" "common_dependencies" {
 # ------------------------------------------------------------------------------
 
 resource "aws_ssm_parameter" "lambda_layer_arn" {
-  name        = "/${var.project_name}/${var.environment}/lambda/layer/common-deps/arn"
-  description = "ARN of the shared Lambda dependency layer"
+  name        = "/${var.project_name}/${var.environment}/lambda-layer-arn"
+  description = "ARN of the Lambda Layer with common dependencies"
   type        = "String"
   value       = aws_lambda_layer_version.common_dependencies.arn
 
   tags = {
-    Name = "${var.project_name}-layer-arn-param-${var.environment}"
+    Name = "${var.project_name}-layer-arn-${var.environment}"
   }
 }

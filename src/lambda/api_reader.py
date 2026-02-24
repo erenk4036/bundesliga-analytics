@@ -53,6 +53,29 @@ def decimal_to_float(obj):
     return obj
 
 
+def add_recommendation(bet: Dict) -> Dict:
+    """
+    Add recommendation field based on value_percentage.
+    
+    STRONG BUY: >= 8%
+    BUY:        >= 5%
+    CONSIDER:   >= 3%
+    HOLD:       < 3%
+    """
+    value_pct = float(bet.get("value_percentage", 0))
+    
+    if value_pct >= 8.0:
+        bet["recommendation"] = "STRONG BUY"
+    elif value_pct >= 5.0:
+        bet["recommendation"] = "BUY"
+    elif value_pct >= 3.0:
+        bet["recommendation"] = "CONSIDER"
+    else:
+        bet["recommendation"] = "HOLD"
+    
+    return bet
+
+
 def get_value_bets(date: str = None, limit: int = 50) -> List[Dict]:
     """
     Query DynamoDB for value betting signals.
@@ -80,8 +103,11 @@ def get_value_bets(date: str = None, limit: int = 50) -> List[Dict]:
         items = response.get("Items", [])
         logger.info(f"Retrieved {len(items)} value bets for date {date}")
         
-        # Convert Decimal to float for JSON
-        return decimal_to_float(items)
+        # Convert Decimal to float and add recommendations
+        items = decimal_to_float(items)
+        items = [add_recommendation(bet) for bet in items]
+
+        return items
         
     except Exception as exc:
         logger.exception(f"Error querying DynamoDB: {exc}")
@@ -120,8 +146,12 @@ def get_recent_bets(days: int = 7, limit: int = 100) -> List[Dict]:
         all_items.sort(key=lambda x: float(x.get("value_percentage", 0)), reverse=True)
         
         logger.info(f"Retrieved {len(all_items)} bets across {days} days")
-        
-        return decimal_to_float(all_items[:limit])
+
+        # Convert Decimal to float and add recommendations
+        all_items = decimal_to_float(all_items[:limit])
+        all_items = [add_recommendation(bet) for bet in all_items]
+
+        return all_items
         
     except Exception as exc:
         logger.exception(f"Error scanning DynamoDB: {exc}")
@@ -177,6 +207,7 @@ def lambda_handler(event: dict, context) -> dict:
             "date": date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
             "days": days,
             "data": data,
+            "value_bets": data,  # For backward compatibility
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
